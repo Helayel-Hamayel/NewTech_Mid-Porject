@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { members } from "../../data/Members"; // Your members array
 
-export default function Login({ handleRegister }) {
+export default function Login({ onToggle }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -11,18 +10,17 @@ export default function Login({ handleRegister }) {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
-    const foundUser = members.find(
-      (m) => m.email.toLowerCase() === email.toLowerCase()
-    );
+    // Calls Firestore/Firebase Auth through AuthContext
+    const result = await login(email, password);
 
-    if (foundUser) {
-      login(foundUser); 
-      navigate("/catalogue"); 
+    if (result.success) {
+      navigate("/catalogue");
     } else {
-      setError("Invalid email or user not found!");
+      setError(result.error || "Invalid email or user not found!");
     }
   };
 
@@ -53,7 +51,7 @@ export default function Login({ handleRegister }) {
 
       <section>
         <p>New member? Register here!</p>
-        <button type="button" onClick={handleRegister}>
+        <button type="button" onClick={onToggle}>
           Sign up!
         </button>
       </section>

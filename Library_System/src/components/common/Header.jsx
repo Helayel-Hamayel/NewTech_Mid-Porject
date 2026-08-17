@@ -1,13 +1,14 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext";
+import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Header() {
   const { cartCount } = useCart();
   const navigate = useNavigate();
-  const location = useLocation(); // Gets current route path
+  const location = useLocation();
 
   const isCartPage = location.pathname === "/cart";
+  const isLoansPage = location.pathname === "/my-loans";
 
   const { currentUser, logout } = useAuth();
 
@@ -27,12 +28,24 @@ export default function Header() {
     navigate("/catalogue");
   };
 
+  const handleMyLoans = (e) => {
+    e.preventDefault();
+    navigate("/my-loans");
+  };
+
   return (
     <header>
       <span>Meridian Library</span>
-      -
-      <span> {currentUser ? currentUser.name : "Guest"} </span>
-      -
+      {" - "}
+      <span>{currentUser ? currentUser.name : "Guest"}</span>
+      {" - "}
+
+      <button onClick={handleHome}>Catalogue</button>
+
+      {!isLoansPage && (
+        <button onClick={handleMyLoans}>My Loans</button>
+      )}
+
       {isCartPage ? (
         <button onClick={handleHome}>Head Home</button>
       ) : (

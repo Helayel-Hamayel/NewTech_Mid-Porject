@@ -1,8 +1,23 @@
 import { useCart } from "../../context/CartContext";
 
 function ProductCard({ product }) {
-  const { cart, addToCart } = useCart();
+  const { cart, activeLoans, addToCart } = useCart();
+
   const isInCart = cart.some((item) => item.id === product.id);
+  const isBorrowed = activeLoans.includes(product.id);
+  const isOutOfStock = product.availableCopies <= 0;
+
+  // Determine button state and label
+  const isDisabled = isInCart || isBorrowed || isOutOfStock;
+
+  let buttonText = "Borrow Book";
+  if (isBorrowed) {
+    buttonText = "Already Borrowed";
+  } else if (isInCart) {
+    buttonText = "Already in Cart";
+  } else if (isOutOfStock) {
+    buttonText = "Out of Stock";
+  }
 
   return (
     <article className="product-card">
@@ -18,15 +33,21 @@ function ProductCard({ product }) {
         <p className="product-description">{product.description}</p>
 
         <div className="product-footer">
-          <strong className="product-price">${product.price.toFixed(2)}</strong>
+          <p>
+            Available Copies:
+            <strong className="product-price">
+              {" "}
+              {product.availableCopies}
+            </strong>
+          </p>
 
           <button
             type="button"
             className="add-button"
-            disabled={isInCart}
+            disabled={isDisabled}
             onClick={() => addToCart(product)}
           >
-            {isInCart ? "Already in Cart" : "Borrow Book"}
+            {buttonText}
           </button>
         </div>
       </div>

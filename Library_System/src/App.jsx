@@ -1,11 +1,13 @@
-import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import "./App.css";
 
-import Introduction from "./pages/Introduction";
-import Catalogue from "./pages/Catalogue";
-import NotFound from "./components/NotFound";
-import SharedLayout from "./components/SharedLayout";
-import BookLoaning from "./pages/BookLoaning";
+import Introduction from "./pages/AuthPage";
+import BookLoaning from "./pages/CartPage";
+import Catalogue from "./pages/CataloguePage";
+import MyLoans from "./pages/MyLoansPage";
+
+import NotFound from "./components/common/NotFound";
+import SharedLayout from "./components/common/SharedLayout";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: "cart",
         element: <BookLoaning />,
+      },
+      {
+        path: "my-loans", //
+        element: <MyLoans />,
       },
     ],
   },
