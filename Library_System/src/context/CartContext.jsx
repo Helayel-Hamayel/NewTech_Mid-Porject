@@ -16,6 +16,7 @@ const CartContext = createContext();
 
 export function CartProvider({ children }) {
   const { currentUser } = useAuth();
+  const userId = currentUser?.id || currentUser?.uid;
 
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem("cart");
@@ -24,14 +25,27 @@ export function CartProvider({ children }) {
 
   const [activeLoans, setActiveLoans] = useState([]);
 
+  // Clear cart whenever userId changes or user logs out
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
+    setCart((prev) => {
+      if (prev.length === 0) return prev;
+      localStorage.removeItem("cart");
+      return [];
+    });
+  }, [userId]);
+
+  // Keep single localStorage key synced
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } else {
+      localStorage.removeItem("cart");
+    }
   }, [cart]);
 
   // Fetch active loans for current user
   useEffect(() => {
     async function fetchUserLoans() {
-      const userId = currentUser?.id || currentUser?.uid;
       if (!userId) {
         setActiveLoans([]);
         return;
@@ -46,7 +60,7 @@ export function CartProvider({ children }) {
 
         const querySnapshot = await getDocs(q);
         const loanedBookIds = querySnapshot.docs.map(
-          (doc) => doc.data().bookId,
+          (docSnap) => docSnap.data().bookId,
         );
         setActiveLoans(loanedBookIds);
       } catch (error) {
@@ -55,28 +69,42 @@ export function CartProvider({ children }) {
     }
 
     fetchUserLoans();
-  }, [currentUser]);
+  }, [userId]);
 
   function addToCart(product) {
+    if (currentUser?.isSuspended) return;
+
+    const safeId = product.id || product.docId;
+    if (!safeId) return;
+
     setCart((currentCart) => {
-      const exists = currentCart.some((item) => item.id === product.id);
+      const exists = currentCart.some(
+        (item) => (item.id || item.docId) === safeId,
+      );
       if (exists) return currentCart;
-      return [...currentCart, product];
+      return [...currentCart, { ...product, id: safeId, docId: safeId }];
     });
   }
 
   function removeFromCart(productId) {
     setCart((currentCart) =>
-      currentCart.filter((item) => item.id !== productId),
+      currentCart.filter((item) => (item.id || item.docId) !== productId),
     );
   }
 
   function clearCart() {
     setCart([]);
+    localStorage.removeItem("cart");
   }
 
   async function checkout() {
-    const userId = currentUser?.id || currentUser?.uid;
+    if (currentUser?.isSuspended) {
+      alert(
+        "Your account is currently suspended. Please contact library staff.",
+      );
+      return { success: false, error: "Account suspended" };
+    }
+
     if (!userId) {
       return { success: false, error: "You must be logged in to checkout!" };
     }
@@ -89,19 +117,18 @@ export function CartProvider({ children }) {
       const now = new Date();
       const borrowDate = now.toISOString().split("T")[0];
 
-      // Due date set to 14 days from today
       const due = new Date();
       due.setDate(due.getDate() + 14);
       const dueDate = due.toISOString().split("T")[0];
 
       for (const item of cart) {
+        const targetBookId = item.id || item.docId;
         const generatedLoanId = `LN-${now.getFullYear()}-${Math.floor(
           100 + Math.random() * 900,
         )}`;
 
-        // 1. Add complete loan document matching database structure
         await addDoc(collection(db, "loans"), {
-          bookId: item.id,
+          bookId: targetBookId,
           bookTitle: item.name || item.title || "Untitled",
           borrowDate: borrowDate,
           dueDate: dueDate,
@@ -113,15 +140,16 @@ export function CartProvider({ children }) {
           status: "Active",
         });
 
-        // 2. Stringify item.id to resolve doc path error
-        const bookRef = doc(db, "books", String(item.id));
+        const bookRef = doc(db, "books", String(targetBookId));
         await updateDoc(bookRef, {
           availableCopies: increment(-1),
         });
       }
 
-      // Update local state and clear cart
-      setActiveLoans((prev) => [...prev, ...cart.map((item) => item.id)]);
+      setActiveLoans((prev) => [
+        ...prev,
+        ...cart.map((item) => item.id || item.docId),
+      ]);
       clearCart();
 
       return { success: true };
@@ -132,26 +160,22 @@ export function CartProvider({ children }) {
   }
 
   async function returnBook(loanDocId, bookId) {
-    const userId = currentUser?.id || currentUser?.uid;
     if (!userId) return { success: false, error: "Not logged in" };
 
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      // 1. Update loan document status and set return date in Firestore
       const loanRef = doc(db, "loans", loanDocId);
       await updateDoc(loanRef, {
         status: "Returned",
         returnDate: today,
       });
 
-      // 2. Increment availableCopies back by +1 in books collection
       const bookRef = doc(db, "books", String(bookId));
       await updateDoc(bookRef, {
         availableCopies: increment(1),
       });
 
-      // 3. Update local state to remove book from activeLoans
       setActiveLoans((prev) => prev.filter((id) => id !== bookId));
 
       return { success: true };

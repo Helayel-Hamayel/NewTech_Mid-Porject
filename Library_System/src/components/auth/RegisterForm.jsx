@@ -54,6 +54,7 @@ export default function Register({ onToggle }) {
       activeLoansCount: 0,
       isAdmin: false,
       isStaff: false,
+      isSuspended: false,
     };
 
     const result = await register(

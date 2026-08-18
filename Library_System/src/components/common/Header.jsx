@@ -1,58 +1,46 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Link, useMatch, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Header() {
   const { cartCount } = useCart();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const isCartPage = location.pathname === "/cart";
-  const isLoansPage = location.pathname === "/my-loans";
-
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogout = (e) => {
-    e.preventDefault();
+  // React Router route matchers replace manual useLocation string checks
+  const isCartPage = useMatch("/cart");
+  const isLoansPage = useMatch("/my-loans");
+
+  const isStaffOrAdmin =
+    currentUser?.role === "Staff" || currentUser?.role === "Admin";
+
+  const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  const handleCart = (e) => {
-    e.preventDefault();
-    navigate("/cart");
-  };
-
-  const handleHome = (e) => {
-    e.preventDefault();
-    navigate("/catalogue");
-  };
-
-  const handleMyLoans = (e) => {
-    e.preventDefault();
-    navigate("/my-loans");
-  };
-
   return (
     <header>
-      <span>Meridian Library</span>
-      {" - "}
-      <span>{currentUser ? currentUser.name : "Guest"}</span>
-      {" - "}
+      <span>Meridian Library - {currentUser?.name || "Guest"}</span>
 
-      <button onClick={handleHome}>Catalogue</button>
+      <nav style={{ display: "inline-flex", gap: "10px", margin: "0 1rem" }}>
+        <NavLink to="/catalogue">Catalogue</NavLink>
 
-      {!isLoansPage && (
-        <button onClick={handleMyLoans}>My Loans</button>
-      )}
+        {!isLoansPage && <NavLink to="/my-loans">My Loans</NavLink>}
 
-      {isCartPage ? (
-        <button onClick={handleHome}>Head Home</button>
-      ) : (
-        <button onClick={handleCart}>{cartCount} Cart</button>
-      )}
+        {isStaffOrAdmin && <NavLink to="/admin">Admin Panel</NavLink>}
 
-      <button onClick={handleLogout}>Sign Out</button>
+        {/* Your conditional Cart / Head Home swap */}
+        {isCartPage ? (
+          <Link to="/catalogue">Head Home</Link>
+        ) : (
+          <Link to="/cart">{cartCount || 0} Cart</Link>
+        )}
+      </nav>
+
+      <button type="button" onClick={handleLogout}>
+        Sign Out
+      </button>
     </header>
   );
 }

@@ -5,6 +5,8 @@ import Introduction from "./pages/AuthPage";
 import BookLoaning from "./pages/CartPage";
 import Catalogue from "./pages/CataloguePage";
 import MyLoans from "./pages/MyLoansPage";
+import AdminPage from "./pages/AdminPage";
+
 
 import NotFound from "./components/common/NotFound";
 import SharedLayout from "./components/common/SharedLayout";
@@ -29,6 +31,10 @@ const router = createBrowserRouter([
       {
         path: "my-loans", //
         element: <MyLoans />,
+      },
+      {
+        path: "admin",
+        element: <AdminPage />,
       },
     ],
   },
