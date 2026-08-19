@@ -24,15 +24,10 @@ export default function Header() {
       <span>Meridian Library - {currentUser?.name || "Guest"}</span>
 
       <nav style={{ display: "inline-flex", gap: "10px", margin: "0 1rem" }}>
-        <NavLink to="/catalogue">Catalogue</NavLink>
-
-        {!isLoansPage && <NavLink to="/my-loans">My Loans</NavLink>}
-
         {isStaffOrAdmin && <NavLink to="/admin">Admin Panel</NavLink>}
 
-        {/* Your conditional Cart / Head Home swap */}
         {isCartPage ? (
-          <Link to="/catalogue">Head Home</Link>
+          <NavLink to="/catalogue">Catalogue</NavLink>
         ) : (
           <Link to="/cart">{cartCount || 0} Cart</Link>
         )}

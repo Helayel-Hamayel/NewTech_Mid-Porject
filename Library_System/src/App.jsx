@@ -2,11 +2,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
 
 import Introduction from "./pages/AuthPage";
-import BookLoaning from "./pages/CartPage";
 import Catalogue from "./pages/CataloguePage";
-import MyLoans from "./pages/MyLoansPage";
 import AdminPage from "./pages/AdminPage";
-
+import MyBookshelf from "./pages/MyBookShelf";
 
 import NotFound from "./components/common/NotFound";
 import SharedLayout from "./components/common/SharedLayout";
@@ -26,11 +24,7 @@ const router = createBrowserRouter([
       },
       {
         path: "cart",
-        element: <BookLoaning />,
-      },
-      {
-        path: "my-loans", //
-        element: <MyLoans />,
+        element: <MyBookshelf />,
       },
       {
         path: "admin",

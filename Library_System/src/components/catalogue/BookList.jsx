@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { db } from "../../utils/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useCart } from "../../context/CartContext";
-import { useAuth } from "../../context/AuthContext"; // 1. Import AuthContext
 import BookWikiModal from "./BookWiki";
 
 export default function BookList({ searchQuery, genre, startYear, endYear }) {
@@ -10,19 +10,24 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
   const [loading, setLoading] = useState(true);
   const [selectedWikiBookId, setSelectedWikiBookId] = useState(null);
 
-  const { currentUser } = useAuth(); // 2. Extract currentUser
-  const { addToCart, activeLoans = [], cart = [] } = useCart();
+  // Consume cart, active loans, fines & suspension directly from CartContext
+  const {
+    addToCart,
+    activeLoans = [],
+    cart = [],
+    unpaidFines = 0,
+    isSuspended = false,
+  } = useCart();
 
-  // 3. Evaluate suspension status safely
-  const isSuspended = Boolean(currentUser?.isSuspended);
+  const hasFines = unpaidFines > 0;
 
   useEffect(() => {
     async function fetchBooks() {
       try {
         const querySnapshot = await getDocs(collection(db, "books"));
         const bookData = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Primary ID for React checks
-          docId: doc.id, // Backup docId
+          id: doc.id,
+          docId: doc.id,
           ...doc.data(),
         }));
         setBooks(bookData);
@@ -36,7 +41,6 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
     fetchBooks();
   }, []);
 
-  // Filter books matching search criteria
   const filteredBooks = books.filter((book) => {
     const bookTitle = book.name || "";
     const bookAuthor = book.author || "";
@@ -61,7 +65,6 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
     return matchesQuery && matchesGenre && matchesStartYear && matchesEndYear;
   });
 
-  // Find live reference using id or docId fallback
   const selectedBook = books.find(
     (b) => b.id === selectedWikiBookId || b.docId === selectedWikiBookId,
   );
@@ -70,7 +73,7 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
 
   return (
     <div>
-      {/* 4. Display notice if user is suspended */}
+      {/* Account Suspended Warning Banner */}
       {isSuspended && (
         <div
           style={{
@@ -87,13 +90,33 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
         </div>
       )}
 
+      {/* Unpaid Fine Warning Banner */}
+      {!isSuspended && hasFines && (
+        <div
+          style={{
+            padding: "0.75rem 1rem",
+            marginBottom: "1rem",
+            backgroundColor: "#fef3c7",
+            border: "1px solid #f59e0b",
+            color: "#92400e",
+            borderRadius: "6px",
+          }}
+        >
+          <strong>Outstanding Fine (${unpaidFines.toFixed(2)}):</strong> You
+          must{" "}
+          <Link to="/cart" style={{ color: "#78350f", fontWeight: "bold" }}>
+            pay your fines in your cart
+          </Link>{" "}
+          before borrowing new books.
+        </div>
+      )}
+
       {filteredBooks.length === 0 ? (
         <p>No books found matching your search criteria.</p>
       ) : (
         filteredBooks.map((book) => {
           const currentBookId = book.id || book.docId;
 
-          // Safe status evaluation
           const isBorrowed = activeLoans.some((loan) => {
             const loanId =
               typeof loan === "string" ? loan : loan.bookId || loan.id;
@@ -106,6 +129,23 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
           });
 
           const isOutOfStock = Number(book.availableCopies) <= 0;
+
+          // Block borrowing if suspended OR user has unpaid fines
+          const isDisabled =
+            isBorrowed || isInCart || isOutOfStock || isSuspended || hasFines;
+
+          let buttonText = "Borrow Book";
+          if (isSuspended) {
+            buttonText = "Account Suspended";
+          } else if (hasFines) {
+            buttonText = "Pay Fine First";
+          } else if (isBorrowed) {
+            buttonText = "Already Borrowed";
+          } else if (isInCart) {
+            buttonText = "In Cart";
+          } else if (isOutOfStock) {
+            buttonText = "Out of Stock";
+          }
 
           return (
             <article key={currentBookId}>
@@ -136,21 +176,12 @@ export default function BookList({ searchQuery, genre, startYear, endYear }) {
               >
                 View Wiki Info
               </button>{" "}
-              {/* 5. Disable button and update text for suspended users */}
               <button
                 type="button"
-                disabled={isBorrowed || isInCart || isOutOfStock || isSuspended}
+                disabled={isDisabled}
                 onClick={() => addToCart({ ...book, id: currentBookId })}
               >
-                {isSuspended
-                  ? "Account Suspended"
-                  : isBorrowed
-                    ? "Already Borrowed"
-                    : isInCart
-                      ? "In Cart"
-                      : isOutOfStock
-                        ? "Out of Stock"
-                        : "Borrow Book"}
+                {buttonText}
               </button>
               <hr />
             </article>

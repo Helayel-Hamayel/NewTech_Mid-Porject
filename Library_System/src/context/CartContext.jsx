@@ -7,6 +7,7 @@ import {
   getDocs,
   addDoc,
   doc,
+  onSnapshot,
   updateDoc,
   increment,
 } from "firebase/firestore";
@@ -24,6 +25,34 @@ export function CartProvider({ children }) {
   });
 
   const [activeLoans, setActiveLoans] = useState([]);
+  const [unpaidFines, setUnpaidFines] = useState(0);
+  const [isSuspended, setIsSuspended] = useState(false);
+
+  // REAL-TIME FIRESTORE LISTENER FOR USER FINES & SUSPENSION
+  useEffect(() => {
+    if (!userId) {
+      setUnpaidFines(0);
+      setIsSuspended(false);
+      return;
+    }
+
+    const userRef = doc(db, "users", userId);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUnpaidFines(Number(data?.unpaidFines) || 0);
+          setIsSuspended(Boolean(data?.isSuspended));
+        }
+      },
+      (error) => {
+        console.error("Error watching user profile:", error);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // Clear cart whenever userId changes or user logs out
   useEffect(() => {
@@ -72,7 +101,7 @@ export function CartProvider({ children }) {
   }, [userId]);
 
   function addToCart(product) {
-    if (currentUser?.isSuspended) return;
+    if (isSuspended || unpaidFines > 0) return;
 
     const safeId = product.id || product.docId;
     if (!safeId) return;
@@ -97,12 +126,31 @@ export function CartProvider({ children }) {
     localStorage.removeItem("cart");
   }
 
+  async function payFine() {
+    if (!userId) return { success: false, error: "Not logged in" };
+    try {
+      await updateDoc(doc(db, "users", userId), { unpaidFines: 0 });
+      return { success: true };
+    } catch (err) {
+      console.error("Failed to pay fine:", err);
+      return { success: false, error: err.message };
+    }
+  }
+
   async function checkout() {
-    if (currentUser?.isSuspended) {
-      alert(
-        "Your account is currently suspended. Please contact library staff.",
-      );
-      return { success: false, error: "Account suspended" };
+    if (isSuspended) {
+      return {
+        success: false,
+        error:
+          "Your account is currently suspended. Please contact library staff.",
+      };
+    }
+
+    if (unpaidFines > 0) {
+      return {
+        success: false,
+        error: `You have an outstanding fine of $${unpaidFines}. Please pay your fine before loaning books.`,
+      };
     }
 
     if (!userId) {
@@ -165,12 +213,14 @@ export function CartProvider({ children }) {
     try {
       const today = new Date().toISOString().split("T")[0];
 
+      // 1. Reference and update loan status
       const loanRef = doc(db, "loans", loanDocId);
       await updateDoc(loanRef, {
         status: "Returned",
         returnDate: today,
       });
 
+      // 2. Reference and update book inventory (FIXED: removed nested doc wrapper)
       const bookRef = doc(db, "books", String(bookId));
       await updateDoc(bookRef, {
         availableCopies: increment(1),
@@ -189,11 +239,14 @@ export function CartProvider({ children }) {
     cart,
     cartItems: cart,
     activeLoans,
+    unpaidFines,
+    isSuspended,
     addToCart,
     removeFromCart,
     clearCart,
     checkout,
     returnBook,
+    payFines: payFine,
     cartCount: cart.length,
   };
 
