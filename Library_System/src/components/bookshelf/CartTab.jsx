@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import "../../styles/bookshelf/CartTab.css";
 
 export default function CartTab({
   cart,
@@ -19,9 +20,9 @@ export default function CartTab({
 
   if (!cart || cart.length === 0) {
     return (
-      <div style={{ padding: "2rem 0", textAlign: "center" }}>
-        <p style={{ color: "#6b7280" }}>Your pending cart is empty.</p>
-        <Link to="/catalogue" style={{ color: "#2563eb", fontWeight: "bold" }}>
+      <div className="cart-tab-empty">
+        <p className="cart-tab-empty-text">Your pending cart is empty.</p>
+        <Link to="/catalogue" className="cart-tab-empty-link">
           Browse Catalogue
         </Link>
       </div>
@@ -29,32 +30,22 @@ export default function CartTab({
   }
 
   return (
-    <div>
+    <div className="cart-tab-container">
       {cart.map((item) => {
         const itemId = item.id || item.docId;
         const itemTitle = item.title || item.name || "Untitled Book";
         return (
-          <article
-            key={itemId}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "1rem",
-              marginBottom: "0.5rem",
-              backgroundColor: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-            }}
-          >
+          <article key={itemId} className="cart-item-card">
             <div>
-              <h4 style={{ margin: "0 0 0.25rem 0" }}>{itemTitle}</h4>
-              <p style={{ margin: 0, fontSize: "0.875rem", color: "#6b7280" }}>
-                {item.author ? item.author : ""} {item.genre ? `| ${item.genre}` : ""}
+              <h4 className="cart-item-title">{itemTitle}</h4>
+              <p className="cart-item-meta">
+                {item.author ? item.author : ""}{" "}
+                {item.genre ? `| ${item.genre}` : ""}
               </p>
             </div>
             <button
               type="button"
+              className="cart-item-remove-btn"
               onClick={() => removeFromCart(itemId)}
               disabled={processing}
             >
@@ -64,36 +55,29 @@ export default function CartTab({
         );
       })}
 
-      <div
-        style={{
-          marginTop: "1.5rem",
-          padding: "1rem",
-          backgroundColor: "#f3f4f6",
-          borderRadius: "8px",
-          borderLeft: "4px solid #2563eb",
-        }}
-      >
-        <p style={{ margin: 0, fontSize: "0.875rem", color: "#374151" }}>
-          📌 <strong>Borrowing Policy:</strong> Books must be returned on or before their assigned due date (14 days from checkout — <strong>Due: {formattedDueDate}</strong>). Late returns incur daily fines.
+      <div className="cart-policy-box">
+        <p className="cart-policy-text">
+          📌 <strong>Borrowing Policy:</strong> Books must be returned on or
+          before their assigned due date (14 days from checkout —{" "}
+          <strong>Due: {formattedDueDate}</strong>). Late returns incur daily
+          fines.
         </p>
       </div>
 
-      <div
-        style={{
-          marginTop: "1.25rem",
-          display: "flex",
-          gap: "1rem",
-          justifyContent: "flex-end",
-        }}
-      >
-        <button type="button" onClick={clearCart} disabled={processing}>
+      <div className="cart-actions-row">
+        <button
+          type="button"
+          className="cart-btn-secondary"
+          onClick={clearCart}
+          disabled={processing}
+        >
           Clear Cart
         </button>
         <button
           type="button"
+          className="cart-btn-primary"
           onClick={handleCheckout}
           disabled={processing || isSuspended || hasFines}
-          style={{ fontWeight: "bold" }}
         >
           {processing ? "Processing..." : "Confirm Checkout"}
         </button>

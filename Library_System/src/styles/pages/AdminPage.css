@@ -1,0 +1,48 @@
+.admin-page {
+  padding: 1rem 0;
+}
+
+.admin-page h2 {
+  margin-bottom: 1.25rem;
+}
+
+.admin-subnav {
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 0.625rem;
+}
+
+.nav-btn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.nav-btn:hover {
+  background-color: var(--bg-primary);
+}
+
+.nav-btn.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.admin-divider {
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.access-denied-container {
+  padding: 2rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-radius: var(--radius-lg);
+  border: 1px solid #fca5a5;
+  text-align: center;
+}

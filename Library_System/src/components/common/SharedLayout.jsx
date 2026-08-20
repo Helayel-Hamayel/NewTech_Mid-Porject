@@ -1,13 +1,16 @@
 import { Outlet } from "react-router-dom";
-import Header from "./Header"
-import Footer from "./Footer"
+import Header from "./Header";
+import Footer from "./Footer";
+import "../../styles/common/SharedLayout.css";
 
 export default function SharedLayout() {
   return (
-    <div>
-        <Header/>
+    <div className="app-layout">
+      <Header />
+      <main className="main-content-wrapper">
         <Outlet />
-        <Footer/>
+      </main>
+      <Footer />
     </div>
   );
 }

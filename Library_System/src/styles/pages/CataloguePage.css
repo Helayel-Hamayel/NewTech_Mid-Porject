@@ -1,0 +1,49 @@
+.catalogue-page {
+  padding: 1.5rem 0;
+}
+
+.catalogue-search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  background-color: var(--bg-surface);
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.catalogue-search-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 160px;
+}
+
+.catalogue-search-form label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.catalogue-search-form input,
+.catalogue-search-form select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  outline: none;
+}
+
+.catalogue-search-form input:focus,
+.catalogue-search-form select:focus {
+  border-color: var(--primary);
+}
+
+.search-btn {
+  height: 38px;
+  padding: 0 1.25rem;
+}

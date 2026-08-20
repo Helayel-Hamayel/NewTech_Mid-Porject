@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import "../../styles/auth/RegisterForm.css";
 
 export default function Register({ onToggle }) {
   const [formData, setFormData] = useState({
@@ -73,18 +74,21 @@ export default function Register({ onToggle }) {
   };
 
   return (
-    <section>
-      <form onSubmit={handleSubmit}>
-        <h2>Register User</h2>
+    <section className="register-card">
+      <form onSubmit={handleSubmit} className="register-form">
+        <h2 className="register-title">Register User</h2>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p className="register-error">{error}</p>}
 
-        <div>
-          <label htmlFor="name">Full Name:</label>
+        <div className="register-field">
+          <label htmlFor="name" className="register-label">
+            Full Name:
+          </label>
           <input
             type="text"
             id="name"
             name="name"
+            className="register-input"
             placeholder="Dania"
             value={formData.name}
             onChange={handleChange}
@@ -93,12 +97,15 @@ export default function Register({ onToggle }) {
         </div>
 
         {/* Full Email Field */}
-        <div>
-          <label htmlFor="email">Email Address:</label>
+        <div className="register-field">
+          <label htmlFor="email" className="register-label">
+            Email Address:
+          </label>
           <input
             type="email"
             id="email"
             name="email"
+            className="register-input"
             placeholder="dania@library.org"
             value={formData.email}
             onChange={handleChange}
@@ -107,28 +114,26 @@ export default function Register({ onToggle }) {
         </div>
 
         {/* Password with Show/Hide Toggle */}
-        <div>
-          <label htmlFor="password">Password:</label>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="register-field">
+          <label htmlFor="password" className="register-label">
+            Password:
+          </label>
+          <div className="register-password-group">
             <input
               type={showPassword ? "text" : "password"}
               id="password"
               name="password"
+              className="register-input"
               placeholder="Minimum 6 characters"
               value={formData.password}
               onChange={handleChange}
               required
               minLength={6}
-              style={{ flex: 1 }}
             />
             <button
               type="button"
+              className="register-toggle-pwd-btn"
               onClick={() => setShowPassword((prev) => !prev)}
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontSize: "13px",
-              }}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
@@ -136,12 +141,15 @@ export default function Register({ onToggle }) {
         </div>
 
         {/* Date of Birth with Max Date Protection */}
-        <div>
-          <label htmlFor="dateOfBirth">Date of Birth:</label>
+        <div className="register-field">
+          <label htmlFor="dateOfBirth" className="register-label">
+            Date of Birth:
+          </label>
           <input
             type="date"
             id="dateOfBirth"
             name="dateOfBirth"
+            className="register-input"
             max={maxDate}
             value={formData.dateOfBirth}
             onChange={handleChange}
@@ -149,11 +157,14 @@ export default function Register({ onToggle }) {
           />
         </div>
 
-        <div>
-          <label htmlFor="bio">Bio:</label>
+        <div className="register-field">
+          <label htmlFor="bio" className="register-label">
+            Bio:
+          </label>
           <textarea
             id="bio"
             name="bio"
+            className="register-textarea"
             rows="3"
             placeholder="Loves cataloging and organizing community events..."
             value={formData.bio}
@@ -162,15 +173,25 @@ export default function Register({ onToggle }) {
         </div>
 
         <div>
-          <button type="submit" disabled={loading}>
+          <button
+            type="submit"
+            className="register-submit-btn"
+            disabled={loading}
+          >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
         </div>
       </form>
 
-      <section>
-        <p>Already a member? Login here!</p>
-        <button onClick={onToggle}>Sign in!</button>
+      <section className="register-footer-section">
+        <p className="register-footer-text">Already a member? Login here!</p>
+        <button
+          type="button"
+          className="register-switch-btn"
+          onClick={onToggle}
+        >
+          Sign in!
+        </button>
       </section>
     </section>
   );

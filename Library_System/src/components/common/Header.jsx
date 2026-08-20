@@ -1,15 +1,12 @@
-import { NavLink, Link, useMatch, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
+import "../../styles/common/Header.css";
 
 export default function Header() {
-  const { cartCount } = useCart();
+  const { cartCount, activeLoans } = useCart();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-
-  // React Router route matchers replace manual useLocation string checks
-  const isCartPage = useMatch("/cart");
-  const isLoansPage = useMatch("/my-loans");
 
   const isStaffOrAdmin =
     currentUser?.role === "Staff" || currentUser?.role === "Admin";
@@ -19,23 +16,79 @@ export default function Header() {
     navigate("/");
   };
 
+  const loanCount = activeLoans?.length || 0;
+
   return (
-    <header>
-      <span>Meridian Library - {currentUser?.name || "Guest"}</span>
+    <header className="site-header">
+      <div className="header-container">
+        <Link to="/catalogue" className="brand-logo">
+          <span className="brand-icon">📚</span>
+          <div className="brand-text">
+            <span className="brand-title">Meridian</span>
+            <span className="brand-subtitle">Public Library</span>
+          </div>
+        </Link>
 
-      <nav style={{ display: "inline-flex", gap: "10px", margin: "0 1rem" }}>
-        {isStaffOrAdmin && <NavLink to="/admin">Admin Panel</NavLink>}
+        <nav className="header-nav">
+          <NavLink
+            to="/catalogue"
+            className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+          >
+            Catalogue
+          </NavLink>
 
-        {isCartPage ? (
-          <NavLink to="/catalogue">Catalogue</NavLink>
-        ) : (
-          <Link to="/cart">{cartCount || 0} Cart</Link>
-        )}
-      </nav>
+          <NavLink
+            to="/bookshelf"
+            className={({ isActive }) =>
+              `nav-link bookshelf-link ${isActive ? "active" : ""}`
+            }
+          >
+            My Bookshelf
+            {cartCount > 0 && (
+              <span className="badge badge-cart" title="Items in cart">
+                {cartCount}
+              </span>
+            )}
+            {loanCount > 0 && (
+              <span className="badge badge-loans" title="Active loans">
+                {loanCount}
+              </span>
+            )}
+          </NavLink>
 
-      <button type="button" onClick={handleLogout}>
-        Sign Out
-      </button>
+          {isStaffOrAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `nav-link admin-link ${isActive ? "active" : ""}`
+              }
+            >
+              Admin Panel
+            </NavLink>
+          )}
+        </nav>
+
+        <div className="header-user-section">
+          {currentUser ? (
+            <div className="user-profile">
+              <span className="user-greeting">
+                Hello, <strong>{currentUser?.name || "Member"}</strong>
+              </span>
+              <button
+                type="button"
+                className="btn btn-logout"
+                onClick={handleLogout}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link to="/" className="btn btn-login">
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
     </header>
   );
 }

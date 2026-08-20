@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../../utils/firebase";
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  writeBatch,
-} from "firebase/firestore";
+import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
+import "../../styles/admin/TrackLoans.css";
 
 export default function TrackLoans() {
   const [loans, setLoans] = useState([]);
@@ -112,92 +107,44 @@ export default function TrackLoans() {
   };
 
   return (
-    <div>
-      <h3>Track All Customer Loans</h3>
+    <div className="tl-container">
+      <h3 className="tl-title">Track All Customer Loans</h3>
 
       {/* Control Bar: Toggles & Bulk Cleanup */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="tl-control-bar">
         {/* Active vs Returned Toggle */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.25rem",
-            backgroundColor: "#e5e7eb",
-            padding: "0.25rem",
-            borderRadius: "6px",
-          }}
-        >
+        <div className="tl-toggle-group">
           <button
             type="button"
+            className={`tl-toggle-btn ${statusFilter === "Active" ? "active" : ""}`}
             onClick={() => setStatusFilter("Active")}
-            style={{
-              padding: "0.4rem 0.85rem",
-              border: "none",
-              borderRadius: "4px",
-              backgroundColor:
-                statusFilter === "Active" ? "#ffffff" : "transparent",
-              fontWeight: statusFilter === "Active" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             Active ({activeLoans.length})
           </button>
           <button
             type="button"
+            className={`tl-toggle-btn ${statusFilter === "Returned" ? "active" : ""}`}
             onClick={() => setStatusFilter("Returned")}
-            style={{
-              padding: "0.4rem 0.85rem",
-              border: "none",
-              borderRadius: "4px",
-              backgroundColor:
-                statusFilter === "Returned" ? "#ffffff" : "transparent",
-              fontWeight: statusFilter === "Returned" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             Returned ({returnedLoans.length})
           </button>
         </div>
 
         {/* Admin Action Buttons */}
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="tl-action-group">
           <button
             type="button"
+            className="tl-btn-cleanup"
             onClick={() => openCleanupModal("returned")}
             disabled={processing || returnedLoans.length === 0}
-            style={{
-              padding: "0.4rem 0.75rem",
-              backgroundColor: "#f3f4f6",
-              border: "1px solid #d1d5db",
-              borderRadius: "4px",
-              cursor: returnedLoans.length > 0 ? "pointer" : "not-allowed",
-              opacity: returnedLoans.length > 0 ? 1 : 0.5,
-            }}
           >
             Clean Up Returned
           </button>
           <button
             type="button"
+            className="tl-btn-danger"
             onClick={() => openCleanupModal("all")}
             disabled={processing || loans.length === 0}
-            style={{
-              padding: "0.4rem 0.75rem",
-              backgroundColor: "#fee2e2",
-              color: "#991b1b",
-              border: "1px solid #f87171",
-              borderRadius: "4px",
-              cursor: loans.length > 0 ? "pointer" : "not-allowed",
-              opacity: loans.length > 0 ? 1 : 0.5,
-            }}
           >
             Clean Up All
           </button>
@@ -206,117 +153,75 @@ export default function TrackLoans() {
 
       {/* Table Display */}
       {sortedLoans.length === 0 ? (
-        <p style={{ padding: "1rem 0", color: "#6b7280" }}>
+        <p className="tl-empty-msg">
           No {statusFilter.toLowerCase()} customer loans found.
         </p>
       ) : (
-        <table
-          border="1"
-          cellPadding="5"
-          style={{ borderCollapse: "collapse", width: "100%" }}
-        >
-          <thead>
-            <tr>
-              <th
-                onClick={() => handleSort("bookTitle")}
-                style={{ cursor: "pointer" }}
-              >
-                Book Title{" "}
-                {sortField === "bookTitle" ? (sortAsc ? "▲" : "▼") : ""}
-              </th>
-              <th
-                onClick={() => handleSort("memberName")}
-                style={{ cursor: "pointer" }}
-              >
-                Member Name / ID{" "}
-                {sortField === "memberName" ? (sortAsc ? "▲" : "▼") : ""}
-              </th>
-              <th
-                onClick={() => handleSort("borrowedDate")}
-                style={{ cursor: "pointer" }}
-              >
-                Borrowed Date{" "}
-                {sortField === "borrowedDate" ? (sortAsc ? "▲" : "▼") : ""}
-              </th>
-              <th
-                onClick={() => handleSort("dueDate")}
-                style={{ cursor: "pointer" }}
-              >
-                {statusFilter === "Returned" ? "Return Date" : "Due Date"}{" "}
-                {sortField === "dueDate" ? (sortAsc ? "▲" : "▼") : ""}
-              </th>
-              <th
-                onClick={() => handleSort("status")}
-                style={{ cursor: "pointer" }}
-              >
-                Status {sortField === "status" ? (sortAsc ? "▲" : "▼") : ""}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedLoans.map((l) => (
-              <tr key={l.id}>
-                <td>{l.bookTitle || l.name || "N/A"}</td>
-                <td>{l.memberName || l.memberId || l.userId || "N/A"}</td>
-                <td>{l.borrowedDate || l.borrowDate || "N/A"}</td>
-                <td>
-                  {l.status === "Returned"
-                    ? l.returnDate || l.dueDate || "N/A"
-                    : l.dueDate || "N/A"}
-                </td>
-                <td>
-                  <span
-                    style={{
-                      padding: "0.15rem 0.4rem",
-                      borderRadius: "4px",
-                      backgroundColor:
-                        l.status === "Returned" ? "#d1fae5" : "#e0f2fe",
-                      color: l.status === "Returned" ? "#065f46" : "#0369a1",
-                      fontSize: "0.85rem",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {l.status || "Active"}
-                  </span>
-                </td>
+        <div className="tl-table-container">
+          <table className="tl-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSort("bookTitle")}>
+                  Book Title{" "}
+                  {sortField === "bookTitle" ? (sortAsc ? "▲" : "▼") : ""}
+                </th>
+                <th onClick={() => handleSort("memberName")}>
+                  Member Name / ID{" "}
+                  {sortField === "memberName" ? (sortAsc ? "▲" : "▼") : ""}
+                </th>
+                <th onClick={() => handleSort("borrowedDate")}>
+                  Borrowed Date{" "}
+                  {sortField === "borrowedDate" ? (sortAsc ? "▲" : "▼") : ""}
+                </th>
+                <th onClick={() => handleSort("dueDate")}>
+                  {statusFilter === "Returned" ? "Return Date" : "Due Date"}{" "}
+                  {sortField === "dueDate" ? (sortAsc ? "▲" : "▼") : ""}
+                </th>
+                <th onClick={() => handleSort("status")}>
+                  Status {sortField === "status" ? (sortAsc ? "▲" : "▼") : ""}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedLoans.map((l) => {
+                const isReturned = l.status === "Returned";
+                return (
+                  <tr key={l.id}>
+                    <td>{l.bookTitle || l.name || "N/A"}</td>
+                    <td>{l.memberName || l.memberId || l.userId || "N/A"}</td>
+                    <td>{l.borrowedDate || l.borrowDate || "N/A"}</td>
+                    <td>
+                      {isReturned
+                        ? l.returnDate || l.dueDate || "N/A"
+                        : l.dueDate || "N/A"}
+                    </td>
+                    <td>
+                      <span
+                        className={`tl-status-badge ${
+                          isReturned ? "returned" : "active"
+                        }`}
+                      >
+                        {l.status || "Active"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* DOUBLE CONFIRMATION MODAL */}
       {confirmModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "1.5rem",
-              borderRadius: "8px",
-              maxWidth: "420px",
-              width: "100%",
-              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-            }}
-          >
+        <div className="tl-modal-overlay">
+          <div className="tl-modal-card">
             {confirmStep === 1 ? (
               <>
-                <h3 style={{ marginTop: 0, color: "#991b1b" }}>
+                <h3 className="tl-modal-title">
                   ⚠️ Step 1 of 2: Confirm Admin Action
                 </h3>
-                <p style={{ color: "#374151" }}>
+                <p className="tl-modal-text">
                   Are you sure you want to permanently delete{" "}
                   <strong>
                     {confirmModal === "returned"
@@ -325,28 +230,18 @@ export default function TrackLoans() {
                   </strong>
                   ?
                 </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "0.5rem",
-                    marginTop: "1.25rem",
-                  }}
-                >
-                  <button type="button" onClick={closeCleanupModal}>
+                <div className="tl-modal-actions">
+                  <button
+                    type="button"
+                    className="tl-btn-cancel"
+                    onClick={closeCleanupModal}
+                  >
                     Cancel
                   </button>
                   <button
                     type="button"
+                    className="tl-btn-confirm-step"
                     onClick={() => setConfirmStep(2)}
-                    style={{
-                      backgroundColor: "#dc2626",
-                      color: "#ffffff",
-                      fontWeight: "bold",
-                      padding: "0.4rem 0.8rem",
-                      border: "none",
-                      borderRadius: "4px",
-                    }}
                   >
                     Proceed to Step 2 →
                   </button>
@@ -354,54 +249,35 @@ export default function TrackLoans() {
               </>
             ) : (
               <>
-                <h3 style={{ marginTop: 0, color: "#991b1b" }}>
+                <h3 className="tl-modal-title">
                   🚨 Step 2 of 2: Final Verification
                 </h3>
-                <p style={{ color: "#374151", fontSize: "0.9rem" }}>
+                <p className="tl-modal-text-sm">
                   This will permanently erase these records from Firestore. Type{" "}
                   <strong>DELETE</strong> below to confirm:
                 </p>
                 <input
                   type="text"
+                  className="tl-input-verify"
                   value={typedVerification}
                   onChange={(e) => setTypedVerification(e.target.value)}
                   placeholder="Type DELETE"
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    marginBottom: "1rem",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "4px",
-                    boxSizing: "border-box",
-                  }}
                 />
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <button type="button" onClick={closeCleanupModal}>
+                <div className="tl-modal-actions">
+                  <button
+                    type="button"
+                    className="tl-btn-cancel"
+                    onClick={closeCleanupModal}
+                  >
                     Cancel
                   </button>
                   <button
                     type="button"
+                    className={`tl-btn-delete-final ${
+                      typedVerification === "DELETE" ? "ready" : ""
+                    }`}
                     onClick={handleExecuteCleanup}
                     disabled={typedVerification !== "DELETE" || processing}
-                    style={{
-                      backgroundColor:
-                        typedVerification === "DELETE" ? "#dc2626" : "#fca5a5",
-                      color: "#ffffff",
-                      fontWeight: "bold",
-                      padding: "0.4rem 0.8rem",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor:
-                        typedVerification === "DELETE"
-                          ? "pointer"
-                          : "not-allowed",
-                    }}
                   >
                     {processing ? "Deleting..." : "Permanently Delete"}
                   </button>

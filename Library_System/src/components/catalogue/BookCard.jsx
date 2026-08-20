@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
+import "../../styles/catalogue/BookCard.css";
 
 export default function BookCard({ book, onOpenWiki }) {
   const {
-    cart,
-    activeLoans,
+    cart = [],
+    activeLoans = [],
     unpaidFines = 0,
     isSuspended = false,
     addToCart,
@@ -42,81 +43,77 @@ export default function BookCard({ book, onOpenWiki }) {
   }
 
   return (
-    <article className="product-card">
-      <div
-        className="product-image-container"
-        onClick={() => onOpenWiki(currentBookId)}
-        style={{ cursor: "pointer" }}
-      >
-        {book.image && (
-          <img className="product-image" src={book.image} alt={book.name} />
-        )}
+    <article className="book-card">
+      <div>
+        <div
+          className="book-card-image-container"
+          onClick={() => onOpenWiki(currentBookId)}
+        >
+          {book.image && (
+            <img className="book-card-image" src={book.image} alt={book.name} />
+          )}
+        </div>
+
+        <div className="book-card-content">
+          <span className="book-card-category">{book.genre}</span>
+
+          <h3
+            className="book-card-title"
+            onClick={() => onOpenWiki(currentBookId)}
+          >
+            {book.name}{" "}
+            {book.author && (
+              <span className="book-card-author">({book.author})</span>
+            )}
+          </h3>
+
+          {book.description && (
+            <p className="book-card-description">{book.description}</p>
+          )}
+
+          <p className="book-card-year">Published: {book.year}</p>
+
+          {isSuspended && (
+            <p className="book-card-warning font-medium">Account suspended.</p>
+          )}
+
+          {!isSuspended && hasFines && (
+            <p className="book-card-fine">
+              Pay your fine in{" "}
+              <Link to="/bookshelf" className="book-card-fine-link">
+                Bookhshelf
+              </Link>{" "}
+              to borrow.
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="product-content">
-        <span className="product-category">{book.genre}</span>
+      <div className="book-card-footer">
+        <p className="book-card-copies">
+          Available Copies:{" "}
+          <strong className="book-card-copies-count">
+            {book.availableCopies}
+          </strong>
+        </p>
 
-        <h3
-          onClick={() => onOpenWiki(currentBookId)}
-          style={{ cursor: "pointer" }}
-        >
-          {book.name} {book.author && <span>({book.author})</span>}
-        </h3>
-
-        {book.description && (
-          <p className="product-description">{book.description}</p>
-        )}
-
-        <p className="product-year">Published: {book.year}</p>
-
-        {isSuspended && (
-          <p
-            style={{
-              color: "#991b1b",
-              fontSize: "0.85rem",
-              margin: "0.5rem 0",
-            }}
+        <div className="book-card-actions">
+          <button
+            type="button"
+            className="book-card-btn-secondary"
+            onClick={() => onOpenWiki(currentBookId)}
           >
-            Account suspended.
-          </p>
-        )}
+            View Wiki Info
+          </button>
 
-        {!isSuspended && hasFines && (
-          <p
-            style={{
-              color: "#92400e",
-              fontSize: "0.85rem",
-              margin: "0.5rem 0",
-            }}
+          <button
+            type="button"
+            className="book-card-btn-primary"
+            disabled={isDisabled}
+            onClick={() => addToCart({ ...book, id: currentBookId })}
           >
-            Pay your fine in{" "}
-            <Link to="/cart" style={{ fontWeight: "bold" }}>
-              Cart
-            </Link>{" "}
-            to borrow.
-          </p>
-        )}
-
-        <div className="product-footer">
-          <p>
-            Available Copies:{" "}
-            <strong className="product-price">{book.availableCopies}</strong>
-          </p>
-
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-            <button type="button" onClick={() => onOpenWiki(currentBookId)}>
-              View Wiki Info
-            </button>
-
-            <button
-              type="button"
-              className="add-button"
-              disabled={isDisabled}
-              onClick={() => addToCart({ ...book, id: currentBookId })}
-            >
-              {buttonText}
-            </button>
-          </div>
+            {buttonText}
+          </button>
         </div>
       </div>
     </article>

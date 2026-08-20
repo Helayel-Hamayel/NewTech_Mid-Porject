@@ -20,8 +20,13 @@ export function CartProvider({ children }) {
   const userId = currentUser?.id || currentUser?.uid;
 
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem("cart");
-    return savedCart ? JSON.parse(savedCart) : [];
+    try {
+      const savedCart = localStorage.getItem("cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (err) {
+      console.error("Error reading cart from localStorage:", err);
+      return [];
+    }
   });
 
   const [activeLoans, setActiveLoans] = useState([]);
@@ -63,12 +68,16 @@ export function CartProvider({ children }) {
     });
   }, [userId]);
 
-  // Keep single localStorage key synced
+  // Sync cart state with localStorage
   useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("cart");
+    try {
+      if (cart.length > 0) {
+        localStorage.setItem("cart", JSON.stringify(cart));
+      } else {
+        localStorage.removeItem("cart");
+      }
+    } catch (err) {
+      console.error("Error saving cart to localStorage:", err);
     }
   }, [cart]);
 
@@ -220,7 +229,7 @@ export function CartProvider({ children }) {
         returnDate: today,
       });
 
-      // 2. Reference and update book inventory (FIXED: removed nested doc wrapper)
+      // 2. Reference and update book inventory
       const bookRef = doc(db, "books", String(bookId));
       await updateDoc(bookRef, {
         availableCopies: increment(1),

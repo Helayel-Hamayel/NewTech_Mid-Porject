@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { db } from "../../utils/firebase";
-import { collection, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  query,
+  where,
+} from "firebase/firestore";
+import "../../styles/admin/UserManagement.css";
+
+// Helper to sanitize document IDs and strip hidden spaces/non-breaking spaces (\u00A0)
+const cleanDocId = (id) =>
+  String(id || "")
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+    .trim();
 
 export default function UserManagement({ currentUser }) {
   const [users, setUsers] = useState([]);
@@ -9,7 +23,8 @@ export default function UserManagement({ currentUser }) {
   const [sortAsc, setSortAsc] = useState(true);
 
   // Extract current logged-in user ID safely across schemas
-  const currentUserId = currentUser?.id || currentUser?.uid;
+  const rawCurrentUserId = currentUser?.id || currentUser?.uid;
+  const currentUserId = cleanDocId(rawCurrentUserId);
 
   useEffect(() => {
     fetchUsersAndLoans();
@@ -20,17 +35,20 @@ export default function UserManagement({ currentUser }) {
       // Fetch users and all loans in parallel
       const [userSnapshot, loanSnapshot] = await Promise.all([
         getDocs(collection(db, "users")),
-        getDocs(collection(db, "loans"))
+        getDocs(collection(db, "loans")),
       ]);
 
-      const loansList = loanSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const loansList = loanSnapshot.docs.map((d) => ({
+        id: cleanDocId(d.id),
+        ...d.data(),
+      }));
 
       // Count active loans per user (checking if status is 'Active' or case variations/missing status)
       const activeLoanCounts = {};
       loansList.forEach((loan) => {
-        const memberId = loan.memberId;
+        const memberId = cleanDocId(loan.memberId);
         const status = (loan.status || "Active").toLowerCase();
-        
+
         // Consider a loan active if it is explicitly active or hasn't been returned
         if (status === "active" || status === "borrowed") {
           activeLoanCounts[memberId] = (activeLoanCounts[memberId] || 0) + 1;
@@ -39,10 +57,12 @@ export default function UserManagement({ currentUser }) {
 
       const usersList = userSnapshot.docs.map((d) => {
         const userData = d.data();
+        const targetId = cleanDocId(d.id);
+
         return {
-          id: d.id,
           ...userData,
-          activeLoansCount: activeLoanCounts[d.id] || 0,
+          id: targetId, // Placed last so userData.id cannot overwrite cleaned doc key
+          activeLoansCount: activeLoanCounts[targetId] || 0,
         };
       });
 
@@ -53,43 +73,70 @@ export default function UserManagement({ currentUser }) {
   }
 
   const toggleSuspendUser = async (targetUser) => {
+    const targetId = cleanDocId(targetUser.id);
+
     // Prevent self-suspension guard
-    if (targetUser.id === currentUserId) {
+    if (targetId === currentUserId) {
       alert("Action blocked: You cannot suspend your own account.");
       return;
     }
 
     const nextState = !targetUser.isSuspended;
-    await updateDoc(doc(db, "users", targetUser.id), {
-      isSuspended: nextState,
-    });
 
-    setUsers((prev) =>
-      prev.map((u) => (u.id === targetUser.id ? { ...u, isSuspended: nextState } : u))
-    );
+    try {
+      // Use setDoc with merge so missing documents get created smoothly
+      await setDoc(
+        doc(db, "users", targetId),
+        { isSuspended: nextState },
+        { merge: true },
+      );
 
-    // Keep modal state synced if open
-    if (selectedUser?.id === targetUser.id) {
-      setSelectedUser((prev) => ({ ...prev, isSuspended: nextState }));
+      setUsers((prev) =>
+        prev.map((u) =>
+          cleanDocId(u.id) === targetId ? { ...u, isSuspended: nextState } : u,
+        ),
+      );
+
+      // Keep modal state synced if open
+      if (cleanDocId(selectedUser?.id) === targetId) {
+        setSelectedUser((prev) => ({ ...prev, isSuspended: nextState }));
+      }
+    } catch (err) {
+      console.error("Failed to toggle suspension:", err);
+      alert("Error updating user status: " + err.message);
     }
   };
 
   const toggleStaffRole = async (targetUser) => {
-    if (targetUser.id === currentUserId) {
+    const targetId = cleanDocId(targetUser.id);
+
+    if (targetId === currentUserId) {
       alert("Action blocked: You cannot modify your own administrative role.");
       return;
     }
 
     const newRole = targetUser.role === "Staff" ? "Customer" : "Staff";
-    await updateDoc(doc(db, "users", targetUser.id), { role: newRole });
 
-    setUsers((prev) =>
-      prev.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u))
-    );
+    try {
+      await setDoc(
+        doc(db, "users", targetId),
+        { role: newRole },
+        { merge: true },
+      );
 
-    // Keep modal state synced if open
-    if (selectedUser?.id === targetUser.id) {
-      setSelectedUser((prev) => ({ ...prev, role: newRole }));
+      setUsers((prev) =>
+        prev.map((u) =>
+          cleanDocId(u.id) === targetId ? { ...u, role: newRole } : u,
+        ),
+      );
+
+      // Keep modal state synced if open
+      if (cleanDocId(selectedUser?.id) === targetId) {
+        setSelectedUser((prev) => ({ ...prev, role: newRole }));
+      }
+    } catch (err) {
+      console.error("Failed to toggle role:", err);
+      alert("Error updating user role: " + err.message);
     }
   };
 
@@ -122,71 +169,93 @@ export default function UserManagement({ currentUser }) {
   const isAdmin = currentUser?.role === "Admin";
 
   return (
-    <div>
-      <h3>User Management</h3>
+    <div className="um-container">
+      <h3 className="um-title">User Management</h3>
 
-      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead>
-          <tr>
-            <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
-              Name {sortField === "name" ? (sortAsc ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => handleSort("email")} style={{ cursor: "pointer" }}>
-              Email {sortField === "email" ? (sortAsc ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => handleSort("role")} style={{ cursor: "pointer" }}>
-              Role {sortField === "role" ? (sortAsc ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => handleSort("isSuspended")} style={{ cursor: "pointer" }}>
-              Status {sortField === "isSuspended" ? (sortAsc ? "▲" : "▼") : ""}
-            </th>
-            <th onClick={() => handleSort("activeLoansCount")} style={{ cursor: "pointer" }}>
-              Loans {sortField === "activeLoansCount" ? (sortAsc ? "▲" : "▼") : ""}
-            </th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedUsers.map((u) => {
-            const isSelf = u.id === currentUserId;
-            const suspended = Boolean(u.isSuspended);
+      <div className="um-table-container">
+        <table className="um-table">
+          <thead>
+            <tr>
+              <th onClick={() => handleSort("name")}>
+                Name {sortField === "name" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => handleSort("email")}>
+                Email {sortField === "email" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => handleSort("role")}>
+                Role {sortField === "role" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => handleSort("isSuspended")}>
+                Status{" "}
+                {sortField === "isSuspended" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => handleSort("activeLoansCount")}>
+                Loans{" "}
+                {sortField === "activeLoansCount" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedUsers.map((u) => {
+              const uId = cleanDocId(u.id);
+              const isSelf = uId === currentUserId;
+              const suspended = Boolean(u.isSuspended);
 
-            return (
-              <tr key={u.id}>
-                <td>{u.name || "N/A"}</td>
-                <td>{u.email}</td>
-                <td>{u.role || "Customer"}</td>
-                <td>{suspended ? "Suspended" : "Active"}</td>
-                <td>{u.activeLoansCount}</td>
-                <td>
-                  <button type="button" onClick={() => setSelectedUser(u)}>
-                    View Profile
-                  </button>{" "}
-                  <button
-                    type="button"
-                    disabled={isSelf}
-                    title={isSelf ? "You cannot suspend your own account" : ""}
-                    onClick={() => toggleSuspendUser(u)}
-                  >
-                    {suspended ? "Unsuspend" : "Suspend"}
-                  </button>
-                  {isAdmin && u.role !== "Admin" && (
-                    <button
-                      type="button"
-                      disabled={isSelf}
-                      title={isSelf ? "You cannot alter your own role" : ""}
-                      onClick={() => toggleStaffRole(u)}
-                      style={{ marginLeft: "5px" }}
+              return (
+                <tr key={uId}>
+                  <td>{u.name || "N/A"}</td>
+                  <td>{u.email}</td>
+                  <td>{u.role || "Customer"}</td>
+                  <td>
+                    <span
+                      className={`um-badge ${
+                        suspended ? "suspended" : "active"
+                      }`}
                     >
-                      {u.role === "Staff" ? "Revoke Staff" : "Make Staff"}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                      {suspended ? "Suspended" : "Active"}
+                    </span>
+                  </td>
+                  <td>{u.activeLoansCount}</td>
+                  <td>
+                    <div className="um-action-group">
+                      <button
+                        type="button"
+                        className="um-btn-action"
+                        onClick={() => setSelectedUser(u)}
+                      >
+                        View Profile
+                      </button>
+                      <button
+                        type="button"
+                        className="um-btn-warning"
+                        disabled={isSelf}
+                        title={
+                          isSelf ? "You cannot suspend your own account" : ""
+                        }
+                        onClick={() => toggleSuspendUser(u)}
+                      >
+                        {suspended ? "Unsuspend" : "Suspend"}
+                      </button>
+                      {isAdmin && u.role !== "Admin" && (
+                        <button
+                          type="button"
+                          className="um-btn-action"
+                          disabled={isSelf}
+                          title={isSelf ? "You cannot alter your own role" : ""}
+                          onClick={() => toggleStaffRole(u)}
+                        >
+                          {u.role === "Staff" ? "Revoke Staff" : "Make Staff"}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {selectedUser && (
         <UserProfileModal
@@ -214,14 +283,18 @@ function UserProfileModal({
   const [loading, setLoading] = useState(true);
   const [fineInput, setFineInput] = useState("");
 
-  const isSelf = user.id === currentUserId;
+  const targetUserId = cleanDocId(user.id);
+  const isSelf = targetUserId === currentUserId;
 
   useEffect(() => {
     async function fetchUserLoans() {
       try {
-        const q = query(collection(db, "loans"), where("memberId", "==", user.id));
+        const q = query(
+          collection(db, "loans"),
+          where("memberId", "==", targetUserId),
+        );
         const snap = await getDocs(q);
-        setLoans(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoans(snap.docs.map((d) => ({ id: cleanDocId(d.id), ...d.data() })));
       } catch (err) {
         console.error("Error fetching user loans:", err);
       } finally {
@@ -229,98 +302,97 @@ function UserProfileModal({
       }
     }
     fetchUserLoans();
-  }, [user.id]);
+  }, [targetUserId]);
 
   const handleApplyFine = async (e) => {
     e.preventDefault();
     const amount = Number(fineInput);
-    if (isNaN(amount) || amount <= 0) return alert("Enter a valid fine amount.");
+    if (isNaN(amount) || amount <= 0)
+      return alert("Enter a valid fine amount.");
 
     try {
       const updatedFine = (user.unpaidFines || 0) + amount;
-      await updateDoc(doc(db, "users", user.id), { unpaidFines: updatedFine });
+      await setDoc(
+        doc(db, "users", targetUserId),
+        { unpaidFines: updatedFine },
+        { merge: true },
+      );
       user.unpaidFines = updatedFine;
       setFineInput("");
       alert(`Applied fine of $${amount}. New total balance: $${updatedFine}`);
     } catch (err) {
       console.error("Failed to apply fine:", err);
+      alert("Failed to issue fine: " + err.message);
     }
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          maxWidth: "550px",
-          width: "90%",
-          maxHeight: "85vh",
-          overflowY: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button type="button" onClick={onClose} style={{ float: "right" }}>
+    <div className="um-modal-overlay" onClick={onClose}>
+      <div className="um-modal-card" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="um-btn-close" onClick={onClose}>
           Close
         </button>
 
-        <h2>User Profile: {user.name || "N/A"}</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Role:</strong> {user.role || "Customer"}</p>
-        <p><strong>Status:</strong> {user.isSuspended ? "Suspended" : "Active"}</p>
-        <p><strong>Unpaid Fines:</strong> ${user.unpaidFines || 0}</p>
+        <h3 className="um-modal-title">User Profile: {user.name || "N/A"}</h3>
+        <p className="um-profile-info">
+          <strong>Email:</strong> {user.email}
+        </p>
+        <p className="um-profile-info">
+          <strong>Role:</strong> {user.role || "Customer"}
+        </p>
+        <p className="um-profile-info">
+          <strong>Status:</strong>{" "}
+          <span
+            className={`um-badge ${user.isSuspended ? "suspended" : "active"}`}
+          >
+            {user.isSuspended ? "Suspended" : "Active"}
+          </span>
+        </p>
+        <p className="um-profile-info">
+          <strong>Unpaid Fines:</strong> ${user.unpaidFines || 0}
+        </p>
 
-        <hr />
+        <hr className="um-divider" />
 
-        <h3>Loan History ({loans.length} Total)</h3>
+        <h4>Loan History ({loans.length} Total)</h4>
         {loading ? (
-          <p>Loading loan records...</p>
+          <p className="um-profile-info">Loading loan records...</p>
         ) : loans.length === 0 ? (
-          <p>No loan records found for this user.</p>
+          <p className="um-profile-info">
+            No loan records found for this user.
+          </p>
         ) : (
-          <ul style={{ paddingLeft: "1.2rem" }}>
+          <ul className="um-loan-list">
             {loans.map((loan) => (
-              <li key={loan.id}>
-                <strong>{loan.bookTitle || loan.bookId}</strong> — Status: {loan.status || "Active"}{" "}
-                (Due: {loan.dueDate || "N/A"})
+              <li key={loan.id} className="um-loan-item">
+                <strong>{loan.bookTitle || loan.bookId}</strong> — Status:{" "}
+                {loan.status || "Active"} (Due: {loan.dueDate || "N/A"})
               </li>
             ))}
           </ul>
         )}
 
-        <hr />
+        <hr className="um-divider" />
 
-        <h3>Manage User</h3>
-        <form onSubmit={handleApplyFine} style={{ marginBottom: "1rem" }}>
+        <h4>Manage User</h4>
+        <form onSubmit={handleApplyFine} className="um-fine-form">
           <input
             type="number"
             min="1"
             placeholder="Fine amount ($)"
+            className="um-input-fine"
             value={fineInput}
             onChange={(e) => setFineInput(e.target.value)}
-            style={{ marginRight: "0.5rem" }}
           />
-          <button type="submit">Issue Fine</button>
+          <button type="submit" className="um-btn-action">
+            Issue Fine
+          </button>
         </form>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="um-modal-actions">
           <button
             type="button"
+            className="um-btn-warning"
             disabled={isSelf}
             onClick={onToggleSuspend}
           >
@@ -330,6 +402,7 @@ function UserProfileModal({
           {isAdmin && user.role !== "Admin" && (
             <button
               type="button"
+              className="um-btn-action"
               disabled={isSelf}
               onClick={onToggleRole}
             >

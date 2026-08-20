@@ -1,100 +1,96 @@
 import { useCart } from "../../context/CartContext";
-import { useAuth } from "../../context/AuthContext"; // 1. Import AuthContext
+import "../../styles/catalogue/BookWiki.css";
 
 export default function BookWikiModal({ book, onClose }) {
-  const { currentUser } = useAuth(); // 2. Access current logged-in user
-  const { addToCart, activeLoans = [], cart = [] } = useCart();
+  const {
+    addToCart,
+    activeLoans = [],
+    cart = [],
+    unpaidFines = 0,
+    isSuspended = false,
+  } = useCart();
 
   if (!book) return null;
 
-  const isSuspended = Boolean(currentUser?.isSuspended); // 3. Evaluate suspension state
-
   const bookId = book.id || book.docId;
-  const isBorrowed = Boolean(bookId && activeLoans.includes(bookId));
+  const isBorrowed = Boolean(
+    bookId &&
+    activeLoans.some((loan) => {
+      const id = typeof loan === "string" ? loan : loan.bookId || loan.id;
+      return id === bookId;
+    }),
+  );
   const isInCart = Boolean(
     bookId && cart.some((item) => (item.id || item.docId) === bookId),
   );
   const isOutOfStock = Number(book.availableCopies) <= 0;
+  const hasFines = unpaidFines > 0;
+
+  const isDisabled =
+    isBorrowed || isInCart || isOutOfStock || isSuspended || hasFines;
+
+  let buttonText = "Borrow Book";
+  if (isSuspended) {
+    buttonText = "Account Suspended";
+  } else if (hasFines) {
+    buttonText = "Pay Fine First";
+  } else if (isBorrowed) {
+    buttonText = "Already Borrowed";
+  } else if (isInCart) {
+    buttonText = "In Cart";
+  } else if (isOutOfStock) {
+    buttonText = "Out of Stock";
+  }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          maxWidth: "500px",
-          width: "90%",
-          maxHeight: "80vh",
-          overflowY: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button type="button" onClick={onClose} style={{ float: "right" }}>
+    <div className="book-wiki-overlay" onClick={onClose}>
+      <div className="book-wiki-modal" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} className="book-wiki-close-btn">
           Close
         </button>
 
-        <h2>
-          {book.name} <span>({book.author})</span>
+        <h2 className="book-wiki-title">
+          {book.name}{" "}
+          {book.author && (
+            <span className="book-wiki-author">({book.author})</span>
+          )}
         </h2>
 
         {book.image && (
-          <img
-            src={book.image}
-            alt={book.name}
-            width="150"
-            style={{ display: "block", marginBottom: "1rem" }}
-          />
+          <img src={book.image} alt={book.name} className="book-wiki-image" />
         )}
 
-        <p>
-          <strong>Library ID:</strong> {book.libraryId || bookId}
-        </p>
-        <p>
-          <strong>Genre:</strong> {book.genre}
-        </p>
-        <p>
-          <strong>Publication Year:</strong> {book.year}
-        </p>
-        <p>
-          <strong>Available Inventory:</strong> {book.availableCopies} copies
+        <div className="book-wiki-meta">
+          <p>
+            <strong>Library ID:</strong> {book.libraryId || bookId}
+          </p>
+          <p>
+            <strong>Genre:</strong> {book.genre}
+          </p>
+          <p>
+            <strong>Publication Year:</strong> {book.year}
+          </p>
+          <p>
+            <strong>Available Inventory:</strong> {book.availableCopies} copies
+          </p>
+        </div>
+
+        <hr className="book-wiki-divider" />
+
+        <h3 className="book-wiki-subtitle">Overview / Wiki</h3>
+        <p className="book-wiki-description">
+          {book.description || "No wiki entry available for this title."}
         </p>
 
-        <hr />
+        <hr className="book-wiki-divider" />
 
-        <h3>Overview / Wiki</h3>
-        <p>{book.description || "No wiki entry available for this title."}</p>
-
-        <hr />
-
-        {/* 4. Disable button and update label when suspended */}
         <button
           type="button"
-          disabled={isBorrowed || isInCart || isOutOfStock || isSuspended}
+          className="book-wiki-action-btn"
+          disabled={isDisabled}
           onClick={() => addToCart({ ...book, id: bookId })}
         >
-          {isSuspended
-            ? "Account Suspended"
-            : isBorrowed
-              ? "Already Borrowed"
-              : isInCart
-                ? "In Cart"
-                : isOutOfStock
-                  ? "Out of Stock"
-                  : "Borrow Book"}
+          {buttonText}
         </button>
       </div>
     </div>

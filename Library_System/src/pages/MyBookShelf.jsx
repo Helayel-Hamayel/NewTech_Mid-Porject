@@ -7,6 +7,7 @@ import { db } from "../utils/firebase";
 import BookshelfHeader from "../components/bookshelf/BookshelfHeader";
 import CartTab from "../components/bookshelf/CartTab";
 import LoansTab from "../components/bookshelf/LoansTab";
+import "../styles/pages/MyBookShelf.css";
 
 export default function MyBookshelf() {
   const { currentUser } = useAuth();
@@ -40,12 +41,12 @@ export default function MyBookshelf() {
       const q = query(
         collection(db, "loans"),
         where("memberId", "==", userId),
-        where("status", "==", "Active")
+        where("status", "==", "Active"),
       );
       const snapshot = await getDocs(q);
-      const loanList = snapshot.docs.map((doc) => ({
-        docId: doc.id,
-        ...doc.data(),
+      const loanList = snapshot.docs.map((docSnap) => ({
+        docId: docSnap.id,
+        ...docSnap.data(),
       }));
       setLoans(loanList);
     } catch (error) {
@@ -69,21 +70,29 @@ export default function MyBookshelf() {
     try {
       const res = await checkout();
       if (res && res.success === false) {
-        setMessage({ type: "error", text: res.error || "Failed to check out books." });
+        setMessage({
+          type: "error",
+          text: res.error || "Failed to check out books.",
+        });
       } else {
-        setMessage({ type: "success", text: "Books checked out successfully!" });
+        setMessage({
+          type: "success",
+          text: "Books checked out successfully!",
+        });
         setActiveTab("loans");
         fetchUserLoans();
       }
     } catch (err) {
-      setMessage({ type: "error", text: err.message || "Failed to check out books." });
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to check out books.",
+      });
     } finally {
       setProcessing(false);
     }
   };
 
   const handleReturn = async (loanDocId, bookId) => {
-    // Prevent execution if either parameter is missing or invalid
     if (!loanDocId || !bookId) {
       setMessage({
         type: "error",
@@ -99,12 +108,20 @@ export default function MyBookshelf() {
       const res = await returnBook(loanDocId, bookId);
       if (res && res.success) {
         setMessage({ type: "success", text: "Book returned successfully!" });
-        setLoans((prev) => prev.filter((item) => (item.docId || item.id) !== loanDocId));
+        setLoans((prev) =>
+          prev.filter((item) => (item.docId || item.id) !== loanDocId),
+        );
       } else {
-        setMessage({ type: "error", text: res?.error || "Failed to return book." });
+        setMessage({
+          type: "error",
+          text: res?.error || "Failed to return book.",
+        });
       }
     } catch (err) {
-      setMessage({ type: "error", text: err.message || "Failed to return book." });
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to return book.",
+      });
     } finally {
       setProcessing(false);
     }
@@ -118,12 +135,18 @@ export default function MyBookshelf() {
       if (!handlePay) throw new Error("Payment function not available.");
       const res = await handlePay();
       if (res && res.success === false) {
-        setMessage({ type: "error", text: res.error || "Failed to pay fines." });
+        setMessage({
+          type: "error",
+          text: res.error || "Failed to pay fines.",
+        });
       } else {
         setMessage({ type: "success", text: "Fines paid successfully!" });
       }
     } catch (err) {
-      setMessage({ type: "error", text: err.message || "Failed to pay fines." });
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to pay fines.",
+      });
     } finally {
       setProcessing(false);
     }
@@ -132,8 +155,7 @@ export default function MyBookshelf() {
   const displayedLoans = loans.length > 0 ? loans : contextLoans || [];
 
   return (
-    <div className="bookshelf-container" style={{ maxWidth: "1000px", margin: "0 auto", padding: "1.5rem" }}>
-      
+    <div className="bookshelf-page">
       <BookshelfHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -144,20 +166,12 @@ export default function MyBookshelf() {
       />
 
       {message && (
-        <div
-          style={{
-            padding: "0.75rem 1rem",
-            marginBottom: "1.25rem",
-            backgroundColor: message.type === "success" ? "#d1fae5" : "#fee2e2",
-            color: message.type === "success" ? "#065f46" : "#991b1b",
-            borderRadius: "6px",
-          }}
-        >
+        <div className={`status-banner banner-${message.type}`}>
           {message.text}
         </div>
       )}
 
-      <main className="bookshelf-content" style={{ minHeight: "300px" }}>
+      <main className="bookshelf-content">
         {activeTab === "cart" && (
           <CartTab
             cart={cart}
@@ -180,42 +194,25 @@ export default function MyBookshelf() {
         )}
 
         {activeTab === "fines" && (
-          <section>
+          <section className="fines-section">
             {!hasFines ? (
-              <div
-                style={{
-                  padding: "1.5rem",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  backgroundColor: "#f9fafb",
-                }}
-              >
-                <h3 style={{ margin: "0 0 0.5rem 0" }}>Account Status: Good Standing</h3>
-                <p style={{ margin: 0, color: "#4b5563" }}>
-                  You have no outstanding balance or unpaid fines.
-                </p>
+              <div className="fine-card good-standing">
+                <h3>Account Status: Good Standing</h3>
+                <p>You have no outstanding balance or unpaid fines.</p>
               </div>
             ) : (
-              <div
-                style={{
-                  padding: "1.5rem",
-                  border: "1px solid #f59e0b",
-                  borderRadius: "8px",
-                  backgroundColor: "#fffbeb",
-                }}
-              >
-                <h3 style={{ margin: "0 0 0.5rem 0" }}>Outstanding Balance</h3>
-                <p style={{ fontSize: "1.75rem", fontWeight: "bold", margin: "0.5rem 0" }}>
-                  ${unpaidFines.toFixed(2)}
-                </p>
-                <p style={{ color: "#78350f", marginBottom: "1.25rem" }}>
-                  Pay your outstanding fines to clear restrictions and resume borrowing.
+              <div className="fine-card balance-due">
+                <h3>Outstanding Balance</h3>
+                <p className="fine-amount">${unpaidFines.toFixed(2)}</p>
+                <p className="fine-notice">
+                  Pay your outstanding fines to clear restrictions and resume
+                  borrowing.
                 </p>
                 <button
                   type="button"
+                  className="btn btn-primary"
                   onClick={handlePayFines}
                   disabled={processing}
-                  style={{ fontWeight: "bold", cursor: "pointer" }}
                 >
                   {processing ? "Processing Payment..." : "Pay Balance Now"}
                 </button>

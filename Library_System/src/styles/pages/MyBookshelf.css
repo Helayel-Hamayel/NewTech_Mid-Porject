@@ -1,0 +1,68 @@
+.bookshelf-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.status-banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+}
+
+.banner-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid #a7f3d0;
+}
+
+.banner-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.bookshelf-content {
+  min-height: 300px;
+}
+
+.fine-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+}
+
+.fine-card.good-standing {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+}
+
+.fine-card.good-standing h3 {
+  margin-bottom: 0.5rem;
+}
+
+.fine-card.good-standing p {
+  color: var(--text-muted);
+}
+
+.fine-card.balance-due {
+  border: 1px solid #f59e0b;
+  background-color: #fffbeb;
+}
+
+.fine-card.balance-due h3 {
+  margin-bottom: 0.5rem;
+  color: #92400e;
+}
+
+.fine-amount {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #b45309;
+  margin: 0.5rem 0;
+}
+
+.fine-notice {
+  color: #78350f;
+  margin-bottom: 1.25rem;
+}

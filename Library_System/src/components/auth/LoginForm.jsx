@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import "../../styles/auth/LoginForm.css";
 
 export default function Login({ onToggle }) {
   const [email, setEmail] = useState("");
@@ -25,33 +26,43 @@ export default function Login({ onToggle }) {
   };
 
   return (
-    <section>
-      <h2>Login</h2>
-      <p>Welcome back! Please enter your details to continue.</p>
+    <section className="auth-card">
+      <h2 className="auth-title">Login</h2>
+      <p className="auth-subtitle">
+        Welcome back! Please enter your details to continue.
+      </p>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="auth-error">{error}</p>}
 
-      <form className="form-grid" onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Sign In</button>
+      <form className="auth-form" onSubmit={handleLogin}>
+        <div className="auth-field">
+          <input
+            type="email"
+            className="auth-input"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="auth-field">
+          <input
+            type="password"
+            className="auth-input"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit" className="auth-submit-btn">
+          Sign In
+        </button>
       </form>
 
-      <section>
-        <p>New member? Register here!</p>
-        <button type="button" onClick={onToggle}>
+      <section className="auth-footer-section">
+        <p className="auth-footer-text">New member? Register here!</p>
+        <button type="button" className="auth-toggle-btn" onClick={onToggle}>
           Sign up!
         </button>
       </section>

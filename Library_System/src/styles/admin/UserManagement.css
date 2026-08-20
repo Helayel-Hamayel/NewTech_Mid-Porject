@@ -1,0 +1,197 @@
+/* Container & Headers */
+.um-container {
+  width: 100%;
+}
+
+.um-title {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+/* Table Layout */
+.um-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #cbd5e1;
+}
+
+.um-table th,
+.um-table td {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.um-table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.um-table th:hover {
+  background-color: #f1f5f9;
+}
+
+/* Status Badges */
+.um-badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.um-badge.active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.um-badge.suspended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Action Group & Buttons */
+.um-action-group {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.um-btn-action {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.um-btn-action:hover:not(:disabled) {
+  background-color: #f1f5f9;
+}
+
+.um-btn-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.um-btn-warning {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #fde047;
+  border-radius: 4px;
+  background-color: #fef9c3;
+  color: #713f12;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.um-btn-warning:hover:not(:disabled) {
+  background-color: #fef08a;
+}
+
+.um-btn-warning:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Modal Overlay & Dialog */
+.um-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.um-modal-card {
+  background: #ffffff;
+  padding: 1.75rem;
+  border-radius: 8px;
+  max-width: 550px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.um-btn-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  padding: 0.3rem 0.6rem;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.um-btn-close:hover {
+  background-color: #e2e8f0;
+}
+
+.um-modal-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.um-divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.25rem 0;
+}
+
+/* Profile Details & Loan List */
+.um-profile-info {
+  margin: 0.4rem 0;
+  color: #334155;
+}
+
+.um-loan-list {
+  padding-left: 1.2rem;
+  margin: 0.5rem 0;
+  color: #334155;
+}
+
+.um-loan-item {
+  margin-bottom: 0.4rem;
+}
+
+/* Fine Form & Controls */
+.um-fine-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.um-input-fine {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  width: 140px;
+}
+
+.um-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
