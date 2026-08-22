@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  base = "Library_System"
+  command = "npm ci --include=dev && npm run build"
   publish = "dist"
 
 [[redirects]]
