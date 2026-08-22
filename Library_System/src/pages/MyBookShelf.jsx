@@ -8,6 +8,7 @@ import BookshelfHeader from "../components/bookshelf/BookshelfHeader";
 import CartTab from "../components/bookshelf/CartTab";
 import LoansTab from "../components/bookshelf/LoansTab";
 import "../styles/pages/MyBookShelf.css";
+// make sure it matches the file name and path in your project structure
 
 export default function MyBookshelf() {
   const { currentUser } = useAuth();
