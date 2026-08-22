@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import "../../styles/admin/BookManagement.css";
+import { toast } from "react-toastify";
 
 export default function BookManagement() {
   const [subAction, setSubAction] = useState("add");
@@ -84,10 +85,10 @@ export default function BookManagement() {
     try {
       if (editingBook) {
         await updateDoc(doc(db, "books", editingBook.docId), payload);
-        alert("Book updated successfully!");
+        toast("Book updated successfully!");
       } else {
         await addDoc(collection(db, "books"), payload);
-        alert("Book added successfully!");
+        toast("Book added successfully!");
       }
 
       resetForm();

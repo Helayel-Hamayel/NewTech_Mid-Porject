@@ -50,11 +50,14 @@
 }
 
 .book-wiki-image {
-  width: 9rem;
-  height: auto;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 20rem;
+  object-fit: contain;
+  background-color: #f3f4f6;
   margin-bottom: 1rem;
   border-radius: 4px;
-  object-fit: cover;
 }
 
 .book-wiki-meta {

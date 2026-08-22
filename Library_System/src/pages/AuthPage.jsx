@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Login from "../components/auth/LoginForm";
 import Register from "../components/auth/RegisterForm";
 import "../styles/pages/AuthPage.css";
+import authBackgroundOne from "../assets/authPage_Background/1.jpg";
+import authBackgroundTwo from "../assets/authPage_Background/2.jpg";
+import authBackgroundThree from "../assets/authPage_Background/3.jpg";
 
 const DEMO_PASSWORD = "freeman123";
 const DEMO_ACCOUNTS = [
@@ -11,13 +14,29 @@ const DEMO_ACCOUNTS = [
   { label: "Staff (Omar)", email: "omar@library.org" },
   { label: "Customer (Tareq)", email: "tareq@email.com" },
 ];
+const AUTH_BACKGROUNDS = [
+  authBackgroundOne,
+  authBackgroundTwo,
+  authBackgroundThree,
+];
 
 export default function AuthPage() {
   const [isRegistering, setIsRegistering] = useState(false);
+  const [backgroundIndex, setBackgroundIndex] = useState(0);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const rotationTimer = window.setInterval(() => {
+      setBackgroundIndex(
+        (currentIndex) => (currentIndex + 1) % AUTH_BACKGROUNDS.length,
+      );
+    }, 8000); // hold the images for 8 seconds before rotating to next one
+
+    return () => window.clearInterval(rotationTimer);
+  }, []);
 
   const handleDemoLogin = async (email) => {
     setDemoLoading(true);
@@ -36,6 +55,18 @@ export default function AuthPage() {
   return (
     <div className="auth-page-container">
       <aside className="auth-hero-aside">
+        {AUTH_BACKGROUNDS.map((background, index) => (
+          <img
+            key={background}
+            className={`auth-hero-background ${
+              index === backgroundIndex ? "active" : ""
+            }`}
+            src={background}
+            alt=""
+            aria-hidden="true"
+          />
+        ))}
+        <div className="auth-hero-overlay" aria-hidden="true" />
         <p className="auth-brand">Meridian Library</p>
         <h1 className="auth-tagline">Every book a door.</h1>
         <p className="auth-description">

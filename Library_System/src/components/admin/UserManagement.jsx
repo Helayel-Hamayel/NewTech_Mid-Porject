@@ -9,6 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import "../../styles/admin/UserManagement.css";
+import { toast } from "react-toastify";
 
 // Helper to sanitize document IDs and strip hidden spaces/non-breaking spaces (\u00A0)
 const cleanDocId = (id) =>
@@ -77,7 +78,7 @@ export default function UserManagement({ currentUser }) {
 
     // Prevent self-suspension guard
     if (targetId === currentUserId) {
-      alert("Action blocked: You cannot suspend your own account.");
+      toast("Action blocked: You cannot suspend your own account.");
       return;
     }
 
@@ -103,7 +104,7 @@ export default function UserManagement({ currentUser }) {
       }
     } catch (err) {
       console.error("Failed to toggle suspension:", err);
-      alert("Error updating user status: " + err.message);
+      toast("Error updating user status: " + err.message);
     }
   };
 
@@ -111,7 +112,7 @@ export default function UserManagement({ currentUser }) {
     const targetId = cleanDocId(targetUser.id);
 
     if (targetId === currentUserId) {
-      alert("Action blocked: You cannot modify your own administrative role.");
+      toast("Action blocked: You cannot modify your own administrative role.");
       return;
     }
 
@@ -136,7 +137,48 @@ export default function UserManagement({ currentUser }) {
       }
     } catch (err) {
       console.error("Failed to toggle role:", err);
-      alert("Error updating user role: " + err.message);
+      toast("Error updating user role: " + err.message);
+    }
+  };
+
+  const handleForgiveFine = async (targetUser) => {
+    const targetId = cleanDocId(targetUser.id);
+
+    try {
+      await setDoc(
+        doc(db, "users", targetId),
+        { unpaidFines: 0 },
+        { merge: true },
+      );
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          cleanDocId(u.id) === targetId ? { ...u, unpaidFines: 0 } : u,
+        ),
+      );
+
+      if (cleanDocId(selectedUser?.id) === targetId) {
+        setSelectedUser((prev) => ({ ...prev, unpaidFines: 0 }));
+      }
+
+      toast(`Fines forgiven for ${targetUser.name || "this user"}.`);
+    } catch (err) {
+      console.error("Failed to forgive fines:", err);
+      toast("Failed to forgive fines: " + err.message);
+    }
+  };
+
+  const updateUserFine = (targetUser, unpaidFines) => {
+    const targetId = cleanDocId(targetUser.id);
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        cleanDocId(u.id) === targetId ? { ...u, unpaidFines } : u,
+      ),
+    );
+
+    if (cleanDocId(selectedUser?.id) === targetId) {
+      setSelectedUser((prev) => ({ ...prev, unpaidFines }));
     }
   };
 
@@ -153,7 +195,7 @@ export default function UserManagement({ currentUser }) {
     let valA = a[sortField] ?? "";
     let valB = b[sortField] ?? "";
 
-    if (sortField === "activeLoansCount") {
+    if (sortField === "activeLoansCount" || sortField === "unpaidFines") {
       valA = Number(valA) || 0;
       valB = Number(valB) || 0;
     } else {
@@ -193,6 +235,9 @@ export default function UserManagement({ currentUser }) {
                 Loans{" "}
                 {sortField === "activeLoansCount" ? (sortAsc ? "▲" : "▼") : ""}
               </th>
+              <th onClick={() => handleSort("unpaidFines")}>
+                Fines {sortField === "unpaidFines" ? (sortAsc ? "▲" : "▼") : ""}
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -217,6 +262,7 @@ export default function UserManagement({ currentUser }) {
                     </span>
                   </td>
                   <td>{u.activeLoansCount}</td>
+                  <td>${(Number(u.unpaidFines) || 0).toFixed(2)}</td>
                   <td>
                     <div className="um-action-group">
                       <button
@@ -236,6 +282,14 @@ export default function UserManagement({ currentUser }) {
                         onClick={() => toggleSuspendUser(u)}
                       >
                         {suspended ? "Unsuspend" : "Suspend"}
+                      </button>
+                      <button
+                        type="button"
+                        className="um-btn-action"
+                        disabled={!(Number(u.unpaidFines) > 0)}
+                        onClick={() => handleForgiveFine(u)}
+                      >
+                        Forgive Fines
                       </button>
                       {isAdmin && u.role !== "Admin" && (
                         <button
@@ -264,6 +318,10 @@ export default function UserManagement({ currentUser }) {
           isAdmin={isAdmin}
           onToggleSuspend={() => toggleSuspendUser(selectedUser)}
           onToggleRole={() => toggleStaffRole(selectedUser)}
+          onFineUpdated={(unpaidFines) =>
+            updateUserFine(selectedUser, unpaidFines)
+          }
+          onForgiveFine={() => handleForgiveFine(selectedUser)}
           onClose={() => setSelectedUser(null)}
         />
       )}
@@ -277,6 +335,8 @@ function UserProfileModal({
   isAdmin,
   onToggleSuspend,
   onToggleRole,
+  onFineUpdated,
+  onForgiveFine,
   onClose,
 }) {
   const [loans, setLoans] = useState([]);
@@ -308,7 +368,7 @@ function UserProfileModal({
     e.preventDefault();
     const amount = Number(fineInput);
     if (isNaN(amount) || amount <= 0)
-      return alert("Enter a valid fine amount.");
+      return toast("Enter a valid fine amount.");
 
     try {
       const updatedFine = (user.unpaidFines || 0) + amount;
@@ -317,14 +377,16 @@ function UserProfileModal({
         { unpaidFines: updatedFine },
         { merge: true },
       );
-      user.unpaidFines = updatedFine;
+      onFineUpdated(updatedFine);
       setFineInput("");
-      alert(`Applied fine of $${amount}. New total balance: $${updatedFine}`);
+      toast(`Applied fine of $${amount}. New total balance: $${updatedFine}`);
     } catch (err) {
       console.error("Failed to apply fine:", err);
-      alert("Failed to issue fine: " + err.message);
+      toast("Failed to issue fine: " + err.message);
     }
   };
+
+  const hasUnpaidFines = Number(user.unpaidFines) > 0;
 
   return (
     <div className="um-modal-overlay" onClick={onClose}>
@@ -390,6 +452,14 @@ function UserProfileModal({
         </form>
 
         <div className="um-modal-actions">
+          <button
+            type="button"
+            className="um-btn-action"
+            disabled={!hasUnpaidFines}
+            onClick={onForgiveFine}
+          >
+            Forgive Fines
+          </button>
           <button
             type="button"
             className="um-btn-warning"

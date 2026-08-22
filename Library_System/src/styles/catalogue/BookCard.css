@@ -10,14 +10,20 @@
 }
 
 .book-card-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background-color: #f3f4f6;
   cursor: pointer;
   margin-bottom: 0.75rem;
 }
 
 .book-card-image {
   width: 100%;
-  height: 12rem;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
   border-radius: 4px;
 }
 

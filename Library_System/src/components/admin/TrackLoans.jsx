@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { db } from "../../utils/firebase";
 import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
 import "../../styles/admin/TrackLoans.css";
+import { toast } from "react-toastify";
 
 export default function TrackLoans() {
   const [loans, setLoans] = useState([]);
@@ -100,7 +101,7 @@ export default function TrackLoans() {
       closeCleanupModal();
     } catch (err) {
       console.error("Cleanup failed:", err);
-      alert("Failed to delete loan records: " + err.message);
+      toast("Failed to delete loan records: " + err.message);
     } finally {
       setProcessing(false);
     }

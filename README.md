@@ -5,7 +5,7 @@
 Meridian Library System is a web application that helps library members discover books, manage borrowing, and keep track of their account. Library staff can use the same system to manage books, members, and loans.
 
 below are the images of my work.
-![Login page picture](Library_System/src/assets/Intro.png)
+![Login page picture](Library_System/src/assets/Authentication%20Page.png)
 ![catalogue page picture](Library_System/src/assets/Catalogue.png)
 ![Loaning page picture](Library_System/src/assets/Loaning.png)
 ![Admin Panel page picture](Library_System/src/assets/AdminPanel.png)
